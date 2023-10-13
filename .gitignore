@@ -1,0 +1,5 @@
+/cov/
+/deps/
+
+# Fresh build directory
+_fresh/

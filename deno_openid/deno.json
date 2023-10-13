@@ -1,0 +1,6 @@
+{
+  "lock": false,
+  "imports": {
+    "https://deno.land/x/deno_stores@$VERSION/mod.ts": "../deno_stores/mod.ts"
+  }
+}
