@@ -9,6 +9,12 @@
 
   "customizations": {
     "vscode": {
+      "terminal.integrated.profiles.linux": {
+        "zsh": {
+          "path": "/bin/zsh"
+        }
+      },
+      "terminal.integrated.defaultProfile.linux": "zsh",
       "extensions": [
         "brunnerh.insert-unicode",
         "denoland.vscode-deno",

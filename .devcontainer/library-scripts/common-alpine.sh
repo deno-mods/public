@@ -1,8 +1,9 @@
 #!/bin/ash
-#-------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
-#-------------------------------------------------------------------------------------------------------------
+# Licensed under the MIT License. 
+# See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
+#-------------------------------------------------------------------------------
 #
 # Docs: https://github.com/microsoft/vscode-dev-containers/blob/main/script-library/docs/common.md
 # Maintainer: The VS Code and Codespaces Teams
@@ -186,6 +187,10 @@ if [ -z "$(git config --get core.editor)" ] && [ -z "${GIT_EDITOR}" ]; then
     fi
 fi
 
+# Add some aliases
+alias ll="ls -alh"
+alias gti="git"
+
 EOF
 )"
 
@@ -210,7 +215,8 @@ fi
 EOF
 chmod +x /usr/local/bin/code
 
-# Codespaces bash and OMZ themes - partly inspired by https://github.com/ohmyzsh/ohmyzsh/blob/master/themes/robbyrussell.zsh-theme
+# Codespaces bash and OMZ themes - partly inspired by 
+# https://github.com/ohmyzsh/ohmyzsh/blob/master/themes/robbyrussell.zsh-theme
 codespaces_bash="$(cat \
 <<'EOF'
 
