@@ -14,7 +14,7 @@ import { createPKCEChallenge, createSearchParams, redirect } from "./utils.ts";
 
 export interface OpenIDOptions<I, P extends string> {
   providers: Record<P, Provider>;
-  sessions?: Store<FlowSession<I, P>>;
+  sessions?: Store<string, FlowSession<I, P>>;
   globalOptions?: GlobalOptions;
   /**
    * Only meant for dependency injection while testing.
@@ -48,7 +48,7 @@ export interface OpenIDOptions<I, P extends string> {
  * This implementation provides a method for each phase.
  */
 export class OpenID<I = unknown, P extends string = string> {
-  #sessions: Store<FlowSession<I, P>>;
+  #sessions: Store<string, FlowSession<I, P>>;
   #providers: Record<P, Provider>;
   #globalOptions?: GlobalOptions;
   #fetch: typeof fetch;

@@ -1,16 +1,17 @@
 /// <reference lib="deno.unstable" />
-import { Store } from "./store.ts";
+import { ArrayKey, SimpleKey, Store } from "./store.ts";
 
-interface KVStoreOptions<S> {
+interface KVStoreOptions {
   kv: Deno.Kv;
   prefix?: string;
 }
 
-export class KVStore<S> implements Store<S> {
+export class KVStore<K extends SimpleKey | ArrayKey = SimpleKey, V = unknown>
+  implements Store<K, V> {
   #kv: Deno.Kv;
   #prefix: string;
 
-  constructor(options: KVStoreOptions<S>) {
+  constructor(options: KVStoreOptions) {
     const {
       kv,
       prefix = "kv_store",
@@ -19,15 +20,27 @@ export class KVStore<S> implements Store<S> {
     this.#prefix = prefix;
   }
 
-  async get(id: string) {
-    return (await this.#kv.get([this.#prefix, id])).value as S || undefined;
+  async get(key: K) {
+    const arrayKey = Array.isArray(key) ? key : [key];
+    return (await this.#kv.get([this.#prefix, ...arrayKey])).value as V ||
+      undefined;
   }
 
-  async set(id: string, session: S, expireIn?: number | undefined) {
-    await this.#kv.set([this.#prefix, id], session, { expireIn });
+  async set(key: K, value: V, expireIn?: number | undefined) {
+    const arrayKey = Array.isArray(key) ? key : [key];
+    await this.#kv.set([this.#prefix, ...arrayKey], value, { expireIn });
   }
 
-  async delete(id: string) {
-    await this.#kv.delete([this.#prefix, id]);
+  async delete(key: K) {
+    const arrayKey = Array.isArray(key) ? key : [key];
+    await this.#kv.delete([this.#prefix, ...arrayKey]);
+  }
+
+  async isEmpty() {
+    const list = this.#kv.list({ prefix: [this.#prefix] }, { limit: 1 });
+    for await (const _ of list) {
+      return false;
+    }
+    return true;
   }
 }

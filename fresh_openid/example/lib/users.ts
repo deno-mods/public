@@ -11,21 +11,21 @@ export interface User {
 }
 
 class Users {
-  readonly #store: Store<User>;
+  readonly #store: Store<[string, string], User>;
 
   constructor(kv: Deno.Kv) {
-    this.#store = new KVStore<User>({ prefix: "users", kv });
+    this.#store = new KVStore<[string, string], User>({ prefix: "users", kv });
   }
 
   // deno-lint-ignore require-await
   async get(iss: string, sub: string) {
-    return this.#store.get(`${iss}:${sub}`);
+    return this.#store.get([iss, sub]);
   }
 
   // deno-lint-ignore require-await
   async set(user: User) {
     const { iss, sub } = user;
-    return this.#store.set(`${iss}:${sub}`, user);
+    return this.#store.set([iss, sub], user);
   }
 }
 

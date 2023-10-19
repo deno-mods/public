@@ -15,7 +15,7 @@ const CTX_KEY = "session_id";
 const KEY_ROTATION = true;
 const COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
-  maxAge: 15 * 60, // 15 minutes
+  maxAge: 15 * 60, // max age in seconds = 15 mins
   sameSite: "Lax",
   path: "/",
   // TODO: uncomment for more security
@@ -29,7 +29,7 @@ interface CookieOptions extends Partial<Cookie> {
 }
 
 interface Options<S> {
-  store?: Store<SessionInfo<S>>;
+  store?: Store<string, SessionInfo<S>>;
   cookieOptions?: CookieOptions;
   cookieName?: string;
   ctxKey?: string;
@@ -43,7 +43,7 @@ export interface SessionInfo<S> {
 }
 
 export class Sessions<S = unknown> {
-  readonly #store: Store<SessionInfo<S>>;
+  readonly #store: Store<string, SessionInfo<S>>;
   readonly #cookieOptions: CookieOptions;
   readonly #cookieName: string;
   readonly #ctxKey: string;
@@ -52,7 +52,7 @@ export class Sessions<S = unknown> {
   readonly #expireIn: number;
 
   constructor(options: Options<S> = {}) {
-    this.#store = options.store || new MapStore<SessionInfo<S>>();
+    this.#store = options.store || new MapStore<string, SessionInfo<S>>();
     this.#cookieOptions = {
       ...COOKIE_OPTIONS,
       ...options.cookieOptions,
@@ -105,25 +105,17 @@ export class Sessions<S = unknown> {
     };
   }
 
-  get create() {
-    return (ctx: SessionContext) => {
-      if (this.#getSessionInfo(ctx)) {
-        throw new Error("Session already exists");
-      } else {
-        const info: SessionInfo<S> = {
+  get read() {
+    return (ctx: SessionContext, create = false) => {
+      let info = this.#getSessionInfo(ctx);
+      if (!info && create) {
+        info = {
           id: crypto.randomUUID(),
           state: "new",
           data: {},
         };
-        ctx.state[this.#ctxKey] = info;
-        return info.data;
+        (ctx.state ??= {})[this.#ctxKey] = info;
       }
-    };
-  }
-
-  get read() {
-    return (ctx: SessionContext) => {
-      const info = this.#getSessionInfo(ctx);
       return info?.data;
     };
   }
@@ -148,7 +140,10 @@ export class Sessions<S = unknown> {
   }
 
   #getSessionInfo(ctx: SessionContext) {
-    return ctx.state[this.#ctxKey] as SessionInfo<S> | undefined;
+    if (ctx?.state) {
+      return ctx.state[this.#ctxKey] as SessionInfo<S> | undefined;
+    }
+    return undefined;
   }
 }
 

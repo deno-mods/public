@@ -1,19 +1,22 @@
-import { Store } from "./store.ts";
+import { ArrayKey, SimpleKey, Store } from "./store.ts";
 
 /**
  * Options for map store, mainly menat for testing
  */
-interface MapStoreOptions<D> {
+interface MapStoreOptions<
+  K extends SimpleKey | ArrayKey = SimpleKey,
+  V = unknown,
+> {
   /**
    * Map to use as storage if you need direct access to it
    */
-  map?: Map<string, D>;
+  map?: Map<string, V>;
 
   /**
    * Callback when a data is set
    */
-  onSet?: (id: string, data: D) => void | Promise<void>;
-  onDelete?: (id: string, data: D | undefined) => void | Promise<void>;
+  onSet?: (key: K, value: V) => void | Promise<void>;
+  onDelete?: (key: K, value: V | undefined) => void | Promise<void>;
 }
 
 /**
@@ -21,17 +24,18 @@ interface MapStoreOptions<D> {
  *
  * Simple store implementation using a Map as storage
  */
-export class MapStore<D = unknown> implements Store<D> {
-  #oldest: Timestamp | undefined;
-  #map: Map<string, D>;
-  #onSet: undefined | ((id: string, data: D) => void | Promise<void>);
+export class MapStore<K extends SimpleKey | ArrayKey = SimpleKey, V = unknown>
+  implements Store<K, V> {
+  #oldest: Timestamp<K> | undefined;
+  #map: Map<string, V>;
+  #onSet: undefined | ((key: K, value: V) => void | Promise<void>);
   #onDelete:
     | undefined
-    | ((id: string, data: D | undefined) => void | Promise<void>);
+    | ((key: K, value: V | undefined) => void | Promise<void>);
 
-  constructor(options: MapStoreOptions<D> = {}) {
+  constructor(options: MapStoreOptions<K, V> = {}) {
     const {
-      map = new Map<string, D>(),
+      map = new Map<string, V>(),
       onSet,
       onDelete,
     } = options;
@@ -43,18 +47,15 @@ export class MapStore<D = unknown> implements Store<D> {
   #checkTimestamp() {
     const now = Date.now();
     while (this.#oldest && this.#oldest.time < now) {
-      this.#map.delete(this.#oldest.id);
+      this.#map.delete(mapKey(this.#oldest.key));
       this.#oldest = this.#oldest.next;
     }
   }
 
-  #addTimestamp(id: string, expireIn: number) {
+  #addTimestamp(key: K, expireIn: number) {
     const now = Date.now();
     const time = now + expireIn;
-    const timestamp: Timestamp = {
-      time,
-      id,
-    };
+    const timestamp: Timestamp<K> = { time, key };
     if (!this.#oldest || this.#oldest.time > time) {
       timestamp.next = this.#oldest;
       this.#oldest = timestamp;
@@ -68,35 +69,43 @@ export class MapStore<D = unknown> implements Store<D> {
     }
   }
 
-  get(id: string) {
+  get(key: K) {
     this.#checkTimestamp();
-    return this.#map.get(id);
+    return this.#map.get(mapKey(key));
   }
 
-  async set(id: string, data: D, expireIn?: number) {
+  async set(key: K, value: V, expireIn?: number) {
     this.#checkTimestamp();
-    this.#map.set(id, data);
+    this.#map.set(mapKey(key), value);
     if (expireIn && expireIn > 0) {
-      this.#addTimestamp(id, expireIn);
+      this.#addTimestamp(key, expireIn);
     }
-    await this.#onSet?.(id, data);
+    await this.#onSet?.(key, value);
   }
 
-  async delete(id: string) {
+  async delete(key: K) {
     this.#checkTimestamp();
-    const data = this.#map.get(id);
+    const data = this.#map.get(mapKey(key));
     if (data) {
-      this.#map.delete(id);
+      this.#map.delete(mapKey(key));
     }
-    await this.#onDelete?.(id, data);
+    await this.#onDelete?.(key, data);
   }
+
+  isEmpty() {
+    return this.#map.size === 0;
+  }
+}
+
+function mapKey(key: unknown): string {
+  return JSON.stringify(key);
 }
 
 /**
  * A timestamp linked list
  */
-interface Timestamp {
+interface Timestamp<K> {
   time: number;
-  id: string;
-  next?: Timestamp;
+  key: K;
+  next?: Timestamp<K>;
 }
