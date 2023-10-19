@@ -36,6 +36,12 @@ export interface Info {
 
 export type FreshTokens = Tokens<Info>;
 
+export type OnAuthenticated = (
+  req: Request,
+  ctx: HandlerContext,
+  tokens: FreshTokens,
+) => void | undefined | string | Promise<void | undefined | string>;
+
 export function fresh_openid({
   paths = {},
   providers,
@@ -45,13 +51,7 @@ export function fresh_openid({
   getRedirect = "redirect",
   _fetch,
 }: Options<Info>): Plugin & {
-  onAuthenticated: (
-    listener: (
-      req: Request,
-      ctx: HandlerContext,
-      tokens: FreshTokens,
-    ) => void | Promise<void>,
-  ) => void;
+  onAuthenticated: (listener: OnAuthenticated) => void;
 } {
   validatePaths(paths);
   const pathPrefix = paths.prefix || "/openid";
@@ -65,13 +65,7 @@ export function fresh_openid({
     _fetch,
   });
 
-  const listeners: Array<
-    (
-      req: Request,
-      ctx: HandlerContext,
-      tokens: FreshTokens,
-    ) => void | Promise<void>
-  > = [];
+  const listeners: OnAuthenticated[] = [];
 
   return {
     name: "deno_openid",
@@ -115,13 +109,14 @@ provider ID for the request context.`
             const state = getSearchParam(req, "state");
             const code = getSearchParam(req, "code");
             const tokens = await flow.codeExchange(state, code);
+            let location: void | string | undefined;
             for (const listener of listeners) {
-              await listener(req, ctx, tokens);
+              location = await listener(req, ctx, tokens);
             }
-            const redirect_uri = tokens.info?.redirect_uri || "/";
+            location ??= tokens.info?.redirect_uri || "/";
             return new Response(null, {
               status: 302,
-              headers: { location: redirect_uri },
+              headers: { location },
             });
           };
         })(),
