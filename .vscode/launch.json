@@ -6,7 +6,7 @@
   "configurations": [
     {
       "request": "launch",
-      "name": "Tests",
+      "name": "Test current file",
       "type": "node",
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "deno",
@@ -23,6 +23,21 @@
       "type": "node",
       "program": "${workspaceFolder}/fresh_openid/example/dev.ts",
       "cwd": "${workspaceFolder}/fresh_openid/example",
+      "runtimeExecutable": "/bin/deno",
+      "runtimeArgs": [
+        "run",
+        "--inspect-wait",
+        "--allow-all",
+        "--unstable"
+      ],
+      "attachSimplePort": 9229
+    },
+    {
+      "request": "launch",
+      "name": "dooiy.org",
+      "type": "node",
+      "program": "${workspaceFolder}/dooiy.org/dev.ts",
+      "cwd": "${workspaceFolder}/dooiy.org",
       "runtimeExecutable": "/bin/deno",
       "runtimeArgs": [
         "run",
